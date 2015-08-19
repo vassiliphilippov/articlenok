@@ -21,15 +21,18 @@
 
 <body style="padding-left: 30px; padding-top: 30px; padding-right: 30px;">
 <div class="global-container">
+<h1>Артикуленок - тренируем английские артикли</h1>
+<div class="alert alert-info" role="alert">Кликните на слово, чтобы поставить перед ним опрделенный артикль. Кликните еще раз, чтобы поменять артикль.</div>
 <div id="tokenized-text" class="tokenized-text">
 </div>
-<button id="button-check" class="btn btn-primary btn-lg" style="alight: center">Check</button>
-<div id="result-message">
+<button id="button-check" class="btn btn-primary btn-lg" style="alight: center">Проверить</button>
+<div id="result-message" class="result-message alert alert-success" style="display: none">
 </div>
+<button id="button-new" class="btn btn-primary btn-lg" style="alight: center; display: none">Еще раз</button>
 </div>
 <style>
 .global-container {margin: auto; max-width: 1000px;}
-.tokenized-text {margin-bottom: 50px; font-size: 300%;}
+.tokenized-text {margin-bottom: 50px; font-size: 200%;}
 .token-article {color: blue; }
 .token-space {}
 .token-word {}
@@ -38,12 +41,16 @@
 .result-message {font-size: 300%;}
 </style>
 <script>
-var s = "However, according to his official identity card, Mr Yadav is still a sammarjak, which is an Indian word for a manual scavenger. A manual scavenger is someone who cleans human and animal waste from buckets or pits, and is performed by members of low-caste communities - and mostly by Dalits, also known as Untouchables."    
+
+var totalMistakes = 0;
+var totalTotals = 0;
+var excersizeNumber = 0;
+
 function isLetter(s) {
   if (s.length === 1 && s.match(/[a-zA-Z0-9]/i)) {
     return true;
   };
-  if (s.length === 1 && s.match(/[,\s\.]/i)) {
+  if (s.length === 1 && s.match(/[,\s\.\!\?\-]/i)) {
     return false;
   };
 
@@ -161,6 +168,7 @@ function createSpaceTokenElement(parent, token) {
 }
 
 function createTokenElements(parent, tokens) {
+  $(parent).empty();
   for (var i=0; i<tokens.length; i++) {
     var token = tokens[i];
     switch (token.type) {
@@ -210,11 +218,19 @@ function correctArticle(wordElement, articleElement, correctString) {
 }
 
 function showResult(mistakes, total) {
-  console.log("mitakes=" + mistakes + "  total=" + total);
+  totalMistakes += mistakes;
+  totalTotals += total;
+
   var correct = total - mistakes;
+  var totalCorrect = totalTotals - totalMistakes;
+ 
   if (correct<0) correct=0;
+  if (totalCorrect<0) totalCorrect=0;
+ 
   var percentage = Math.floor(correct * 100 / total);
-  $("#result-message").html("" + percentage + "% (" + mistakes + " mistakes)")
+  var totalPercentage = Math.floor(totalCorrect * 100 / totalTotals);
+
+  $("#result-message").html("Текущий: " + percentage + "% (" + mistakes + " ошибки)<br>Среднее: " + totalPercentage + "%");
 }
 
 function getTotalNumberOfArticles(tokens) {
@@ -256,22 +272,64 @@ function checkResult(parent, tokens) {
   console.log(mistakes);
 }
 
-var tokens = tokenizeText(s);
-var tokensNoArticles = removeArticles(tokens);
-createTokenElements($("#tokenized-text"), tokensNoArticles);
-
 $("#button-check").click(function () {
   checkResult($("#tokenized-text"), tokens);  
+  $("#button-check").hide();
+  $("#result-message").show();
+  $("#button-new").show();
+});
+
+$("#button-new").click(function () {
+  excersizeNumber ++;
+  var groupOfGroups = [["Proverbs"], ["JackLondon"], ["CNN"]];
+  var s = getRandomEnglishPhrase(groupOfGroups[excersizeNumber%3], 300);
+  initExercise(s);
+  $("#button-check").show();
+  $("#result-message").hide();
+  $("#button-new").hide();
 });
 
 var englishPhrases = [];
+
+function getRandomEnglishPhrase(groups, maxLength) {
+  console.log(groups);
+  var n = Math.floor(Math.random()*englishPhrases.length);
+  var str = "";
+  for (var attemp=0; attemp<1000; attemp++) {
+    console.log(englishPhrases[n].group);
+    console.log(groups.indexOf(englishPhrases[n].group));
+    if (groups.indexOf(englishPhrases[n].group)!=-1) {
+      console.log("HERE. Length = " + englishPhrases[n].phrase.length);
+      if (str.length + englishPhrases[n].phrase.length < maxLength) {
+        console.log("LENGTH OK");
+        if (str!="") {
+          str = str + " /// ";
+        }
+        str = str + englishPhrases[n].phrase;
+      }
+    }
+    n = Math.floor(Math.random()*englishPhrases.length);
+  }
+  return str;
+}
+
+var tokens = [];
+
+function initExercise(s) {
+  tokens = tokenizeText(s);
+  var tokensNoArticles = removeArticles(tokens);
+  createTokenElements($("#tokenized-text"), tokensNoArticles);
+}
+
 function importEnglishPhrases(json) {
   for (var i=0; i<json.feed.entry.length; i++) {
     var record = json.feed.entry[i];
     var group = record["gsx$"+"group"]["$t"];
     var phrase = record["gsx$"+"phrase"]["$t"];
-    console.log(group + " : " + phrase);
+    englishPhrases.push({"group": group, "phrase": phrase});
   }
+  var s = getRandomEnglishPhrase(["Proverbs"], 600);
+  initExercise(s);
 }
 
 //Click on article change it 
