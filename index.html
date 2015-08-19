@@ -25,6 +25,7 @@
 <div class="alert alert-info" role="alert">Кликните на слово, чтобы поставить перед ним опрделенный артикль. Кликните еще раз, чтобы поменять артикль.</div>
 <div id="tokenized-text" class="tokenized-text">
 </div>
+<div id="group-info" class="group-info"></div>
 <button id="button-check" class="btn btn-primary btn-lg" style="alight: center">Проверить</button>
 <div id="result-message" class="result-message alert alert-success" style="display: none">
 </div>
@@ -33,6 +34,7 @@
 <style>
 .global-container {margin: auto; max-width: 1000px;}
 .tokenized-text {margin-bottom: 50px; font-size: 200%;}
+.group-info {text-align: right; font-size: 100%;}
 .token-article {color: blue; }
 .token-space {}
 .token-word {}
@@ -284,6 +286,7 @@ $("#button-new").click(function () {
   var groupOfGroups = [["Proverbs"], ["JackLondon"], ["CNN"]];
   var s = getRandomEnglishPhrase(groupOfGroups[excersizeNumber%3], 300);
   initExercise(s);
+  $("#group-info").html(groupOfGroups[excersizeNumber%3].join(" "));
   $("#button-check").show();
   $("#result-message").hide();
   $("#button-new").hide();
@@ -329,6 +332,7 @@ function importEnglishPhrases(json) {
     englishPhrases.push({"group": group, "phrase": phrase});
   }
   var s = getRandomEnglishPhrase(["Proverbs"], 600);
+  $("#group-info").html("Proverbs");
   initExercise(s);
 }
 
