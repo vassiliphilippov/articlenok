@@ -38,17 +38,6 @@
    }(document, 'script', 'facebook-jssdk'));
 </script>
 
-AAAAAA
-<button id="share-on-facebook">Share on Facebook</button>
-<script>
-$("#share-on-facebook").click(function() {
-  FB.ui({
-    method: 'feed',
-    link: 'http://articlenok.com/',
-    caption: 'An example caption',
-  }, function(response){});
-});
-</script>
 <div class="global-container">
 <h1>Артикуленок - тренируем английские артикли</h1>
 <div class="alert alert-info" role="alert">В этом тексте спрятаны все артикли. Кликните на слово, чтобы поставить перед ним определенный артикль. Кликните еще раз, чтобы поменять артикль.</div>
@@ -56,9 +45,9 @@ $("#share-on-facebook").click(function() {
 </div>
 <div id="group-info" class="group-info"></div>
 <button id="button-check" class="btn btn-primary btn-lg" style="alight: center">Проверить</button>
-<div id="result-message" class="result-message alert alert-success" style="display: none">
-</div>
-<button id="button-new" class="btn btn-primary btn-lg" style="alight: center; display: none">Еще раз</button>
+<div id="result-message" class="result-message alert alert-success" style="display: none"></div>
+<button id="share-on-facebook" class="btn btn-primary btn-lg"style="alight: center; display: none">Подельиться на Facebook-е</button>
+<button id="button-new" class="btn btn-primary btn-lg" style="alight: center; display: none">Дальше</button>
 </div>
 <style>
 .global-container {margin: auto; max-width: 1000px;}
@@ -270,6 +259,14 @@ function showResult(mistakes, total, show) {
   if (show) {
     $("#result-message").html("Я правильно поставил " + totalPercentage + "% артиклей (" + totalCorrect + " из " + totalTotals + ")");
     $("#result-message").show();
+    $("#share-on-facebook").show();
+    $("#share-on-facebook").click(function() {
+      FB.ui({
+        method: 'feed',
+        link: 'http://articlenok.com/',
+        caption: 'Тренируем английские артикли. Я правильно поставил ' + totalPercentage + '% артиклей',
+      }, function(response){});
+    });
   } else {
    $("#result-message").hide();
   }
