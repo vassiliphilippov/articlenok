@@ -352,6 +352,7 @@ function getRandomEnglishPhrase(groups, maxLength) {
 }
 
 function initExercise(s) {
+  location.hash = "" + (excersizeNumber+1);
   tokens = tokenizeText("[" + (excersizeNumber+1) + "/" + (groupOfGroups.length) + "] " + s);
   var tokensNoArticles = removeArticles(tokens);
   createTokenElements($("#tokenized-text"), tokensNoArticles);
