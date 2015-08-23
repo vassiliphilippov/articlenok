@@ -312,9 +312,9 @@ function checkResult(parent, tokens) {
 }
 
 $("#button-check").click(function () {
-  checkResult($("#tokenized-text"), tokens);  
   $("#button-check").hide();
   $("#button-new").show();
+  checkResult($("#tokenized-text"), tokens);  
 });
 
 var groupOfGroups = [["Wikipedia"], ["JackLondon"], ["CNN"], ["BBC"]];
