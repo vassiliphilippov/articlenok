@@ -38,12 +38,17 @@
    }(document, 'script', 'facebook-jssdk'));
 </script>
 
-<div
-  class="fb-like"
-  data-share="true"
-  data-width="450"
-  data-show-faces="true">
-</div>
+AAAAAA
+<button id="share-on-facebook">Share on Facebook</button>
+<script>
+$("#share-on-facebook").click(function() {
+  FB.ui({
+    method: 'feed',
+    link: 'http://articlenok.com/',
+    caption: 'An example caption',
+  }, function(response){});
+});
+</script>
 <div class="global-container">
 <h1>Артикуленок - тренируем английские артикли</h1>
 <div class="alert alert-info" role="alert">В этом тексте спрятаны все артикли. Кликните на слово, чтобы поставить перед ним определенный артикль. Кликните еще раз, чтобы поменять артикль.</div>
