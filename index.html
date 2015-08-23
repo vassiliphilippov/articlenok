@@ -260,11 +260,12 @@ function showResult(mistakes, total, show) {
     $("#result-message").html("Я правильно поставил " + totalPercentage + "% артиклей (" + totalCorrect + " из " + totalTotals + ")");
     $("#result-message").show();
     $("#share-on-facebook").show();
+    $("#button-new").hide();
     $("#share-on-facebook").click(function() {
       FB.ui({
         method: 'feed',
         link: 'http://articlenok.com/',
-        caption: 'Тренируем английские артикли. Я правильно поставил ' + totalPercentage + '% артиклей',
+        caption: 'Артикуленок - тренируем английские артикли',
       }, function(response){});
     });
   } else {
