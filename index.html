@@ -20,6 +20,30 @@
 </head>
 
 <body style="padding-left: 30px; padding-top: 30px; padding-right: 30px;">
+<script>
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId      : '1481532965501784',
+      xfbml      : true,
+      version    : 'v2.4'
+    });
+  };
+
+  (function(d, s, id){
+     var js, fjs = d.getElementsByTagName(s)[0];
+     if (d.getElementById(id)) {return;}
+     js = d.createElement(s); js.id = id;
+     js.src = "//connect.facebook.net/en_US/sdk.js";
+     fjs.parentNode.insertBefore(js, fjs);
+   }(document, 'script', 'facebook-jssdk'));
+</script>
+
+<div
+  class="fb-like"
+  data-share="true"
+  data-width="450"
+  data-show-faces="true">
+</div>
 <div class="global-container">
 <h1>Артикуленок - тренируем английские артикли</h1>
 <div class="alert alert-info" role="alert">В этом тексте спрятаны все артикли. Кликните на слово, чтобы поставить перед ним определенный артикль. Кликните еще раз, чтобы поменять артикль.</div>
@@ -47,6 +71,8 @@
 var totalMistakes = 0;
 var totalTotals = 0;
 var excersizeNumber = 0;
+var tokens = [];
+var maxPhraseLength = 1000;
 
 function isLetter(s) {
   if (s.length === 1 && s.match(/[a-zA-Z0-9]/i)) {
@@ -133,6 +159,9 @@ function getLeftArticleElement(e) {
 function addArticle(wordElement, articleText) {
   var spanArticle = $("<span></span>").addClass("token-article").html(articleText);
   var spanSpace = $("<span></span>").addClass("token-space").html(" ");
+  spanArticle.click(function() {
+    return wordElement.click();
+  });
   wordElement.before(spanSpace);
   spanSpace.before(spanArticle);
   return spanArticle;
@@ -159,6 +188,7 @@ function createWordTokenElement(parent, token) {
     } else {
       addArticle(span, "the");
     }
+    window.getSelection().empty();
     return false;
   });
   $(parent).append(span);
@@ -219,7 +249,7 @@ function correctArticle(wordElement, articleElement, correctString) {
   articleElement.append($("<span></span>").addClass("corrected-article").html(correctString));  
 }
 
-function showResult(mistakes, total) {
+function showResult(mistakes, total, show) {
   totalMistakes += mistakes;
   totalTotals += total;
 
@@ -232,7 +262,12 @@ function showResult(mistakes, total) {
   var percentage = Math.floor(correct * 100 / total);
   var totalPercentage = Math.floor(totalCorrect * 100 / totalTotals);
 
-  $("#result-message").html("Текущий: " + percentage + "% (" + mistakes + " ошибки)<br>Среднее: " + totalPercentage + "%");
+  if (show) {
+    $("#result-message").html("Я правильно поставил " + totalPercentage + "% артиклей (" + totalCorrect + " из " + totalTotals + ")");
+    $("#result-message").show();
+  } else {
+   $("#result-message").hide();
+  }
 }
 
 function getTotalNumberOfArticles(tokens) {
@@ -270,23 +305,22 @@ function checkResult(parent, tokens) {
       }
     }
   });
-  showResult(mistakes, getTotalNumberOfArticles(tokens)+unneededArticles);
-  console.log(mistakes);
+  showResult(mistakes, getTotalNumberOfArticles(tokens)+unneededArticles, excersizeNumber>=groupOfGroups.length-1);
 }
 
 $("#button-check").click(function () {
   checkResult($("#tokenized-text"), tokens);  
   $("#button-check").hide();
-  $("#result-message").show();
   $("#button-new").show();
 });
 
+var groupOfGroups = [["Wikipedia"], ["JackLondon"], ["CNN"], ["BBC"]];
+
 $("#button-new").click(function () {
   excersizeNumber ++;
-  var groupOfGroups = [["Proverbs"], ["JackLondon"], ["CNN"]];
-  var s = getRandomEnglishPhrase(groupOfGroups[excersizeNumber%3], 300);
+  var s = getRandomEnglishPhrase(groupOfGroups[excersizeNumber%groupOfGroups.length], maxPhraseLength);
   initExercise(s);
-  $("#group-info").html(groupOfGroups[excersizeNumber%3].join(" "));
+  $("#group-info").html(groupOfGroups[excersizeNumber%groupOfGroups.length].join(" "));
   $("#button-check").show();
   $("#result-message").hide();
   $("#button-new").hide();
@@ -299,16 +333,14 @@ function getRandomEnglishPhrase(groups, maxLength) {
   var n = Math.floor(Math.random()*englishPhrases.length);
   var str = "";
   for (var attemp=0; attemp<1000; attemp++) {
-    console.log(englishPhrases[n].group);
-    console.log(groups.indexOf(englishPhrases[n].group));
     if (groups.indexOf(englishPhrases[n].group)!=-1) {
-      console.log("HERE. Length = " + englishPhrases[n].phrase.length);
-      if (str.length + englishPhrases[n].phrase.length < maxLength) {
-        console.log("LENGTH OK");
+      var curLength = (0+str.length + englishPhrases[n].phrase.length);
+      if (curLength < maxLength) {
         if (str!="") {
           str = str + " /// ";
         }
         str = str + englishPhrases[n].phrase;
+        return str;
       }
     }
     n = Math.floor(Math.random()*englishPhrases.length);
@@ -316,10 +348,8 @@ function getRandomEnglishPhrase(groups, maxLength) {
   return str;
 }
 
-var tokens = [];
-
 function initExercise(s) {
-  tokens = tokenizeText(s);
+  tokens = tokenizeText("[" + (excersizeNumber+1) + "/" + (groupOfGroups.length) + "] " + s);
   var tokensNoArticles = removeArticles(tokens);
   createTokenElements($("#tokenized-text"), tokensNoArticles);
 }
@@ -331,12 +361,11 @@ function importEnglishPhrases(json) {
     var phrase = record["gsx$"+"phrase"]["$t"];
     englishPhrases.push({"group": group, "phrase": phrase});
   }
-  var s = getRandomEnglishPhrase(["Proverbs"], 600);
-  $("#group-info").html("Proverbs");
+  var s = getRandomEnglishPhrase(groupOfGroups[0], maxPhraseLength);
+  $("#group-info").html(groupOfGroups[0].join(" "));
   initExercise(s);
 }
 
-//Click on article change it 
 //Calculate total number of articles
 //Capitilize article and decapitalize words (and back)
 </script>
