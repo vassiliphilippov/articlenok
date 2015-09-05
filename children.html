@@ -1,0 +1,421 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta property="og:title" content="Артикуленок - тренируем английские артикли" />
+    <meta property="og:description" content="Простой тест на умение расставлять артикли. В тексте спрятаны все артикли. Кликните на слово, чтобы поставить перед ним артикль."/>
+  
+    <title>Артикуленок - тренируем английские артикли</title>
+    <!-- Bootstrap Core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <script src="js/jquery.js"></script>
+    <script src="js/jquery.cookie.js"></script>
+    <script src="js/bootstrap.js"></script>
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
+
+<body style="padding-left: 30px; padding-top: 30px; padding-right: 30px;">
+<script>
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId      : '1481532965501784',
+      xfbml      : true,
+      version    : 'v2.4'
+    });
+  };
+
+  (function(d, s, id){
+     var js, fjs = d.getElementsByTagName(s)[0];
+     if (d.getElementById(id)) {return;}
+     js = d.createElement(s); js.id = id;
+     js.src = "//connect.facebook.net/en_US/sdk.js";
+     fjs.parentNode.insertBefore(js, fjs);
+   }(document, 'script', 'facebook-jssdk'));
+</script>
+
+<div class="global-container">
+<h1>Артикуленок - тренируем английские артикли</h1>
+<div class="alert alert-info" role="alert">В этом тексте спрятаны все артикли. Кликните на слово, чтобы поставить перед ним определенный артикль. Кликните еще раз, чтобы поменять артикль.</div>
+<div id="tokenized-text" class="tokenized-text">
+</div>
+<div id="group-info" class="group-info"></div>
+<button id="button-check" class="btn btn-primary btn-lg" style="alight: center">Проверить</button>
+<div id="result-message" class="result-message alert alert-success" style="display: none"></div>
+<button id="share-on-facebook" class="btn btn-primary btn-lg"style="alight: center; display: none">Подельиться на Facebook-е</button>
+<button id="button-new" class="btn btn-primary btn-lg" style="alight: center; display: none">Дальше</button>
+</div>
+<style>
+.global-container {margin: auto; max-width: 1000px;}
+.tokenized-text {font-size: 200%;}
+.group-info {margin-bottom: 50px; text-align: right; font-size: 100%;}
+.token-article {color: blue; }
+.token-space {}
+.token-word {}
+.corrected-article {color: red; text-decoration: none; display:inline-block;}
+.wrong-article {text-decoration: line-through;}
+.result-message {font-size: 300%;}
+</style>
+<script>
+
+var totalMistakes = 0;
+var totalTotals = 0;
+var excersizeNumber = 0;
+var tokens = [];
+var maxPhraseLength = 10000;
+
+function isLetter(s) {
+  if (s.length === 1 && s.match(/[a-zA-Z0-9]/i)) {
+    return true;
+  };
+  if (s.length === 1 && s.match(/[,\s\.\!\?\-]/i)) {
+    return false;
+  };
+
+  console.log("Special case!!!");
+  //Handling other characters
+  var r = s.toLowerCase();
+  r = r.replace(new RegExp("\\s", 'g'),"");
+  r = r.replace(new RegExp("[àáâãäå]", 'g'),"a");
+  r = r.replace(new RegExp("æ", 'g'),"ae");
+  r = r.replace(new RegExp("ç", 'g'),"c");
+  r = r.replace(new RegExp("[èéêë]", 'g'),"e");
+  r = r.replace(new RegExp("[ìíîï]", 'g'),"i");
+  r = r.replace(new RegExp("ñ", 'g'),"n");      
+  r = r.replace(new RegExp("[òóôõö]", 'g'),"o");
+  r = r.replace(new RegExp("œ", 'g'),"oe");
+  r = r.replace(new RegExp("[ùúûü]", 'g'),"u");
+  r = r.replace(new RegExp("[ýÿ]", 'g'),"y");
+  r = r.replace(new RegExp("\\W", 'g'),"");
+  return (r.length === 1 && r.match(/[a-zA-Z0-9]/i));
+}
+             
+function tokenizeText(s) {
+  var curState = "word";
+  var curStr = "";
+  var tokens = [];
+  for (var i=0; i<s.length; i++) {
+    switch (curState) {
+      case "word":
+        if (isLetter(s[i])) {
+          curStr = curStr + s[i];
+        } else {
+          var token = {};
+          token.str = curStr;
+          token.type = "word";
+          token.hasArticle = false;
+          tokens.push(token);
+          curState = "space";
+          curStr = s[i];
+        }
+        break;
+      case "space":
+        if (isLetter(s[i])) {
+          var token = {};
+          token.str = curStr;
+          token.type = "space";
+          token.hasArticle = false;
+          tokens.push(token);
+          curState = "word";
+          curStr = s[i];
+        } else {
+          curStr = curStr + s[i];
+        }
+        break;
+    }
+  }
+
+  var token = {};
+  token.str = curStr;
+  token.type = curState;
+  tokens.push(token);  
+  
+  return tokens;
+}
+
+function getLeftArticleElement(e) {
+  var prev = $(e).prev();
+  if (prev.length>0) {
+    preprev = prev.prev();
+    if (preprev.length>0) {
+      if (preprev.hasClass("token-article")) {
+        return preprev;
+      }
+    }
+  }
+  return null;
+}
+
+function addArticle(wordElement, articleText) {
+  var spanArticle = $("<span></span>").addClass("token-article").html(articleText);
+  var spanSpace = $("<span></span>").addClass("token-space").html(" ");
+  spanArticle.click(function() {
+    return wordElement.click();
+  });
+  wordElement.before(spanSpace);
+  spanSpace.before(spanArticle);
+  return spanArticle;
+}
+
+function createWordTokenElement(parent, token) {
+  var span = $("<span></span>").addClass("token-word").html(token.str);
+  span.data("token", token);
+  span.click(function() {
+    var articleTokenElement = getLeftArticleElement(span);
+    if (articleTokenElement!=null) {
+      switch (articleTokenElement.html().toLowerCase()) {
+        case "the":
+          articleTokenElement.html("a");
+          break;
+        case "a":
+          articleTokenElement.html("an");
+          break;
+        case "an":
+          articleTokenElement.next().remove();
+          articleTokenElement.remove();
+          break;
+      }
+    } else {
+      addArticle(span, "the");
+    }
+    window.getSelection().empty();
+    return false;
+  });
+  $(parent).append(span);
+}
+
+function createSpaceTokenElement(parent, token) {
+  var span = $("<span></span>").addClass("token-space").html(token.str);
+  $(parent).append($(span));
+}
+
+function createTokenElements(parent, tokens) {
+  $(parent).empty();
+  for (var i=0; i<tokens.length; i++) {
+    var token = tokens[i];
+    switch (token.type) {
+      case "word":
+        createWordTokenElement(parent, token);
+        break;
+      case "space":
+        createSpaceTokenElement(parent, token);
+        break;
+    }
+  }
+}
+
+function isTokenArticle(token) {
+  if (token.type!="word") return false;
+  var s = token.str.toLowerCase();
+  return s=="a" || s=="an" || s=="the";
+}
+
+function removeArticles(tokens) {
+  var newTokens = [];
+  for (var i=0; i<tokens.length; i++) {
+    var token = tokens[i];
+    if (isTokenArticle(token)) {
+      //Skip space
+      if (i+1<tokens.length) i++;
+      if (i+1<tokens.length) {
+        tokens[i+1].hasArticle = true;
+        tokens[i+1].article = token;
+        if (token.str[0] === token.str[0].toUpperCase()) {
+          tokens[i+1].str = tokens[i+1].str[0].toUpperCase() + tokens[i+1].str.substring(1);
+        }
+      };
+    } else {
+      newTokens.push(token);
+    }
+  }
+  return newTokens;
+}
+
+function correctArticle(wordElement, articleElement, correctString) {
+  if (articleElement==null) {
+    articleElement = addArticle(wordElement, "");
+  }
+  articleElement.addClass("wrong-article");
+  articleElement.append($("<span></span>").addClass("corrected-article").html(correctString));  
+}
+
+function showResult(mistakes, total, show) {
+  totalMistakes += mistakes;
+  totalTotals += total;
+
+  var correct = total - mistakes;
+  var totalCorrect = totalTotals - totalMistakes;
+ 
+  if (correct<0) correct=0;
+  if (totalCorrect<0) totalCorrect=0;
+ 
+  var percentage = Math.floor(correct * 100 / total);
+  var totalPercentage = Math.floor(totalCorrect * 100 / totalTotals);
+
+  if (show) {
+    $("#result-message").html("Я правильно поставил " + totalPercentage + "% артиклей (" + totalCorrect + " из " + totalTotals + ")");
+    $("#result-message").show();
+    $("#share-on-facebook").show();
+    $("#button-new").hide();
+    $("#share-on-facebook").click(function() {
+      FB.ui({
+        method: 'feed',
+        link: 'http://articlenok.com/',
+        caption: 'Артикуленок - тренируем английские артикли',
+      }, function(response){});
+    });
+  } else {
+   $("#result-message").hide();
+  }
+}
+
+function getTotalNumberOfArticles(tokens) {
+  var n = 0;
+  for (var i=0; i<tokens.length; i++) {
+    var token = tokens[i];
+    if (isTokenArticle(token)) {
+      n++;
+    }
+  }
+  return n;
+}
+
+function checkResult(parent, tokens) {
+  var mistakes = 0;
+  var totalArticles = 0;
+  var unneededArticles = 0;
+  parent.children(".token-word").each(function () {
+    var token = $(this).data("token");
+    var article = getLeftArticleElement($(this));
+    var articleText = "";
+    if (article!=null) {
+      articleText = article.html().toLowerCase();
+    }
+    if (token.hasArticle) {
+      if (token.article.str.toLowerCase()!=articleText) {
+        mistakes++;
+        correctArticle($(this), article, token.article.str);
+      }
+    } else {
+      if (articleText!="") {
+        mistakes++;
+        unneededArticles++;
+        correctArticle($(this), article, "");
+      }
+    }
+  });
+  showResult(mistakes, getTotalNumberOfArticles(tokens)+unneededArticles, excersizeNumber>=groupOfGroups.length-1);
+}
+
+$("#button-check").click(function () {
+  $("#button-check").hide();
+  $("#button-new").show();
+  checkResult($("#tokenized-text"), tokens);  
+});
+
+var groupOfGroups = [["ChildrenBook"]];
+
+$("#button-new").click(function () {
+  excersizeNumber ++;
+  var s = getRandomEnglishPhrase(groupOfGroups[excersizeNumber%groupOfGroups.length], maxPhraseLength);
+  initExercise(s);
+  $("#group-info").html(groupOfGroups[excersizeNumber%groupOfGroups.length].join(" "));
+  $("#button-check").show();
+  $("#result-message").hide();
+  $("#button-new").hide();
+});
+
+var englishPhrases = [];
+
+function getRandomEnglishPhrase(groups, maxLength) {
+  console.log(groups);
+  var n = Math.floor(Math.random()*englishPhrases.length);
+  var str = "";
+  for (var attemp=0; attemp<1000; attemp++) {
+    if (groups.indexOf(englishPhrases[n].group)!=-1) {
+      var curLength = (0+str.length + englishPhrases[n].phrase.length);
+      if (curLength < maxLength) {
+        if (str!="") {
+          str = str + " /// ";
+        }
+        str = str + englishPhrases[n].phrase;
+        return str;
+      }
+    }
+    n = Math.floor(Math.random()*englishPhrases.length);
+  }
+  return str;
+}
+
+function initExercise(s) {
+  location.hash = "" + (excersizeNumber+1);
+  tokens = tokenizeText("[" + (excersizeNumber+1) + "/" + (groupOfGroups.length) + "] " + s);
+  var tokensNoArticles = removeArticles(tokens);
+  createTokenElements($("#tokenized-text"), tokensNoArticles);
+}
+
+function importEnglishPhrases(json) {
+  for (var i=0; i<json.feed.entry.length; i++) {
+    var record = json.feed.entry[i];
+    var group = record["gsx$"+"group"]["$t"];
+    var phrase = record["gsx$"+"phrase"]["$t"];
+    englishPhrases.push({"group": group, "phrase": phrase});
+  }
+  var s = getRandomEnglishPhrase(groupOfGroups[0], maxPhraseLength);
+  $("#group-info").html(groupOfGroups[0].join(" "));
+  initExercise(s);
+}
+
+//Calculate total number of articles
+//Capitilize article and decapitalize words (and back)
+</script>
+<script src="https://spreadsheets.google.com/feeds/list/13BZ8CccB2F1wFY3-BqmX_GSREiU69LQklEKfS8QhFnE/od6/public/values?alt=json-in-script&callback=importEnglishPhrases"></script>
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+    (function (d, w, c) {
+        (w[c] = w[c] || []).push(function() {
+            try {
+                w.yaCounter32102381 = new Ya.Metrika({
+                    id:32102381,
+                    clickmap:true,
+                    trackLinks:true,
+                    accurateTrackBounce:true,
+                    webvisor:true,
+                    trackHash:true
+                });
+            } catch(e) { }
+        });
+
+        var n = d.getElementsByTagName("script")[0],
+            s = d.createElement("script"),
+            f = function () { n.parentNode.insertBefore(s, n); };
+        s.type = "text/javascript";
+        s.async = true;
+        s.src = "https://mc.yandex.ru/metrika/watch.js";
+
+        if (w.opera == "[object Opera]") {
+            d.addEventListener("DOMContentLoaded", f, false);
+        } else { f(); }
+    })(document, window, "yandex_metrika_callbacks");
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/32102381" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-66664400-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+</body>
+</html>
